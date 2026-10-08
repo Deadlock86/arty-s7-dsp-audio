@@ -60,6 +60,7 @@ module axis_dd8_wrapper #(
             .new_sample (axis_handshake),
             .sample_in  ($signed(s_axis_data)),
             .mode_sel   (mode_sel),
+            .dtime      (dtime),
             .feedback   (feedback),
             .elevel     (elevel),
             .enable     (enable),

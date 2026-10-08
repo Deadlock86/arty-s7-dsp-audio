@@ -45,6 +45,22 @@ set_property -dict { PACKAGE_PIN M17   IOSTANDARD LVCMOS33 } [get_ports { rx_lrc
 set_property -dict { PACKAGE_PIN M18   IOSTANDARD LVCMOS33 } [get_ports { rx_sclk }]; #IO_L8P_T1_D11_14 Sch=ja_p[4]
 set_property -dict { PACKAGE_PIN N18   IOSTANDARD LVCMOS33 } [get_ports { rx_data }]; #IO_L8N_T1_D12_14 Sch=ja_n[4]
 
+## =========================================================================
+## Pmod SSD 7-segmenses kijelzõ (JB és JC Pmod csatlakozók felsõ sora)
+## =========================================================================
+
+## JB Header - Felsõ sor (Pins 1-4) -> Pmod SSD J1 (AA, AB, AC, AD)
+set_property -dict { PACKAGE_PIN P17   IOSTANDARD LVCMOS33 } [get_ports { pmod_jb_seg[0] }]; # JB1 (Seg A - AA)
+set_property -dict { PACKAGE_PIN P18   IOSTANDARD LVCMOS33 } [get_ports { pmod_jb_seg[1] }]; # JB2 (Seg B - AB)
+set_property -dict { PACKAGE_PIN R18   IOSTANDARD LVCMOS33 } [get_ports { pmod_jb_seg[2] }]; # JB3 (Seg C - AC)
+set_property -dict { PACKAGE_PIN T18   IOSTANDARD LVCMOS33 } [get_ports { pmod_jb_seg[3] }]; # JB4 (Seg D - AD)
+
+## JC Header - Felsõ sor (Pins 1-4) -> Pmod SSD J2 (AE, AF, AG, CAT)
+set_property -dict { PACKAGE_PIN U15   IOSTANDARD LVCMOS33 } [get_ports { pmod_jb_seg[4] }]; # JC1 (Seg E - AE)
+set_property -dict { PACKAGE_PIN V16   IOSTANDARD LVCMOS33 } [get_ports { pmod_jb_seg[5] }]; # JC2 (Seg F - AF)
+set_property -dict { PACKAGE_PIN U17   IOSTANDARD LVCMOS33 } [get_ports { pmod_jb_seg[6] }]; # JC3 (Seg G - AG)
+set_property -dict { PACKAGE_PIN U18   IOSTANDARD LVCMOS33 } [get_ports { pmod_jb_cat }];    # JC4 (Digit select - CAT)
+
 ## Pmod Header JB
 #set_property -dict { PACKAGE_PIN P17   IOSTANDARD LVCMOS33 } [get_ports { jb[0] }]; #IO_L9P_T1_DQS_14 Sch=jb_p[1]
 #set_property -dict { PACKAGE_PIN P18   IOSTANDARD LVCMOS33 } [get_ports { jb[1] }]; #IO_L9N_T1_DQS_D13_14 Sch=jb_n[1]

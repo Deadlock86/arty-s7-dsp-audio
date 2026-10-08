@@ -28,6 +28,10 @@ module top #(
     
     output wire [3:0] led,
     
+    // Pmod SSD ports (JB)
+    output wire [6:0] pmod_jb_seg,
+    output wire       pmod_jb_cat,
+    
     output wire tx_mclk,
     output wire tx_lrck,
     output wire tx_sclk,
@@ -48,6 +52,9 @@ module top #(
     wire axis_rx_valid;
     wire axis_rx_ready;
     wire axis_rx_last;
+
+    wire [3:0] param_select; // 0: Mode, 1: Dtime, 2: Feedback, 3: Elevel
+    wire [2:0] active_value; // 0-7 érték az adott paraméterhez
 
 	wire resetn = (reset == RESET_POLARITY) ? 1'b0 : 1'b1;
 	
@@ -105,6 +112,48 @@ module top #(
             
             .led       (led)      // Feedback LEDs
         );
+    
+    // =========================================================================
+    // 7-Segmenses kijelzõ MUX logika
+    // =========================================================================
+    reg [3:0] ssd_digit_left;  // Paraméter azonosító (0: Mode, 1: DTime, 2: Feedback, 3: ELevel)
+    reg [3:0] ssd_digit_right; // Az éppen kijelölt paraméter értéke (0-7)
+
+    always @(*) begin
+        case (led)
+            4'b0001: begin // LED0 ég -> MODE kiválasztva
+                ssd_digit_left  = 4'h0;
+                ssd_digit_right = {1'b0, dd8_mode_sel};
+            end
+            4'b0010: begin // LED1 ég -> DTIME kiválasztva
+                ssd_digit_left  = 4'h1;
+                ssd_digit_right = {1'b0, dd8_dtime};
+            end
+            4'b0100: begin // LED2 ég -> FEEDBACK kiválasztva
+                ssd_digit_left  = 4'h2;
+                ssd_digit_right = {1'b0, dd8_feedback};
+            end
+            4'b1000: begin // LED3 ég -> E.LEVEL kiválasztva
+                ssd_digit_left  = 4'h3;
+                ssd_digit_right = {1'b0, dd8_elevel};
+            end
+            default: begin
+                ssd_digit_left  = 4'h0;
+                ssd_digit_right = {1'b0, dd8_mode_sel};
+            end
+        endcase
+    end
+
+    //PMOD SSD CTRL instant
+    pmod_ssd_ctrl u_pmod_ssd(
+            .clk        (axis_clk),
+            .rst        (~resetn),
+            .digit_left (ssd_digit_left),
+            .digit_right(ssd_digit_right),
+            .ssd_seg     (pmod_jb_seg),
+            .ssd_cat     (pmod_jb_cat)
+    );
+    
     
     //DD-8 Axi-stram wrapper instant
     axis_dd8_wrapper #(
