@@ -1,0 +1,41 @@
+# ==========================================
+# Vivado temporary and build 
+# ==========================================
+.Xil/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.ioplanning/
+*.gen/
+
+# Project file (create_project.tcl is used)
+*.xpr
+
+# ==========================================
+# Vivado logs
+# ==========================================
+*.log
+*.jou
+*.str
+*.pb
+*.dir/
+*.zip
+*.rpt
+
+# ==========================================
+# Xilinx IP Core 
+# Ignorál everything in IP folders, BUT az .xci/.xcix 
+# ==========================================
+/ip/*/*
+!/ip/*/*.xci
+!/ip/*/*.xcix
+
+# ==========================================
+# op system, IDE
+# ==========================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
