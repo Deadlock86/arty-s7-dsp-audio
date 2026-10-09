@@ -27,7 +27,7 @@ module pmod_ssd_ctrl (
     // =========================================================================
     // 2. Aktuális hexadecimális karakter kiválasztása
     // =========================================================================
-    wire [3:0] current_hex = active_digit ? digit_right : digit_left;
+    wire [3:0] current_hex = active_digit ? digit_left : digit_right;
 
     // =========================================================================
     // 3. Hex-to-7Segment dekóder (Aktív HIGH szegmensek)

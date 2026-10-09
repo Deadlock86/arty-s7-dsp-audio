@@ -16,7 +16,6 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
 module top #(
 	parameter NUMBER_OF_SWITCHES = 4,
 	parameter RESET_POLARITY = 0
@@ -32,14 +31,14 @@ module top #(
     output wire [6:0] pmod_jb_seg,
     output wire       pmod_jb_cat,
     
-    output wire tx_mclk,
-    output wire tx_lrck,
-    output wire tx_sclk,
-    output wire tx_data,
-    output wire rx_mclk,
-    output wire rx_lrck,
-    output wire rx_sclk,
-    input  wire rx_data
+    output wire     tx_mclk,
+    output wire     tx_lrck,
+    output wire     tx_sclk,
+    output wire     tx_data,
+    output wire     rx_mclk,
+    output wire     rx_lrck,
+    output wire     rx_sclk,
+    input  wire     rx_data
 );
     wire axis_clk;
     
@@ -58,11 +57,13 @@ module top #(
 
 	wire resetn = (reset == RESET_POLARITY) ? 1'b0 : 1'b1;
 	
+	//clk IP instant
     clk_wiz_0 m_clk (
         .clk_in1(clk),
         .axis_clk(axis_clk)
     );
 
+    //I2S AXIS IF instant
     axis_i2s2 m_i2s2 (
         .axis_clk(axis_clk),
         .axis_resetn(resetn),
@@ -102,8 +103,8 @@ module top #(
             .resetn    (resetn),
             
             .btn0_sel  (btn[0]), // Parameter stepping (LED0 -> LED1 -> LED2 -> LED3)
-            .btn1_up   (btn[1]), // Value +1
-            .btn2_down (btn[2]), // Value -1
+            .btn1_up   (btn[2]), // Value +1
+            .btn2_down (btn[1]), // Value -1
             
             .mode_sel  (dd8_mode_sel),
             .dtime     (dd8_dtime),
@@ -113,28 +114,26 @@ module top #(
             .led       (led)      // Feedback LEDs
         );
     
-    // =========================================================================
-    // 7-Segmenses kijelzõ MUX logika
-    // =========================================================================
-    reg [3:0] ssd_digit_left;  // Paraméter azonosító (0: Mode, 1: DTime, 2: Feedback, 3: ELevel)
-    reg [3:0] ssd_digit_right; // Az éppen kijelölt paraméter értéke (0-7)
+    // SSD MUX
+    reg [3:0] ssd_digit_left;  // Parameter identifier (0: Mode, 1: DTime, 2: Feedback, 3: ELevel)
+    reg [3:0] ssd_digit_right; // Value of the selected parameter (0-7)
 
     always @(*) begin
         case (led)
-            4'b0001: begin // LED0 ég -> MODE kiválasztva
+            4'b0001: begin // LED0  -> MODE 
                 ssd_digit_left  = 4'h0;
                 ssd_digit_right = {1'b0, dd8_mode_sel};
             end
-            4'b0010: begin // LED1 ég -> DTIME kiválasztva
-                ssd_digit_left  = 4'h1;
+            4'b0010: begin // LED1 ég -> DTIME 
+                ssd_digit_left  = 4'hD;
                 ssd_digit_right = {1'b0, dd8_dtime};
             end
-            4'b0100: begin // LED2 ég -> FEEDBACK kiválasztva
-                ssd_digit_left  = 4'h2;
+            4'b0100: begin // LED2 ég -> FEEDBACK 
+                ssd_digit_left  = 4'hF;
                 ssd_digit_right = {1'b0, dd8_feedback};
             end
-            4'b1000: begin // LED3 ég -> E.LEVEL kiválasztva
-                ssd_digit_left  = 4'h3;
+            4'b1000: begin // LED3 ég -> E.LEVEL 
+                ssd_digit_left  = 4'hE;
                 ssd_digit_right = {1'b0, dd8_elevel};
             end
             default: begin
