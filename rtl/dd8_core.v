@@ -108,7 +108,8 @@ module dd8_core(
 
     // Reverse mutató számítása
     reg [15:0] rev_count = 16'd0;
-    wire [15:0] rev_base = wr_ptr - delay_samps;
+    reg [15:0] rev_base = 16'd0;
+    
     wire [15:0] rev_ptr  = rev_base + (delay_samps - 16'd1 - rev_count);
 
     // LFO / Moduláció mutató számítása
@@ -136,19 +137,18 @@ module dd8_core(
 
     always @(posedge clk) begin
         if (new_sample) begin
-            // Írás az 1. Porton
+            // BRAM read/write
             delay_mem[wr_ptr] <= write_samp;
-            
-            // Szinkron olvasás a 2. Porton (Kizárólag 1 címrõl!)
             delayed_now <= delay_mem[active_rd_ptr];
 
             // Mutatók és számlálók léptetése
             wr_ptr <= wr_ptr + 16'd1;
             lfo_phase <= lfo_phase + 18'd113;
 
-            if (rev_count >= delay_samps - 16'd1)
+            if (rev_count >= delay_samps - 16'd1) begin
                 rev_count <= 16'd0;
-            else
+                rev_base <= wr_ptr - delay_samps;
+            end else
                 rev_count <= rev_count + 16'd1;
         end
     end
@@ -168,7 +168,7 @@ module dd8_core(
                 write_rep = delayed_now;
                 wet_rep   = delayed_now;
             end
-            3'd1: begin // Analog (Sötétebb ismétlés szûréssel)
+            3'd1: begin // Analog 
                 write_rep = (delayed_now >>> 1) + (delayed_now >>> 2);
                 wet_rep   = write_rep;
             end
