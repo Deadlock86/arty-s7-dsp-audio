@@ -119,12 +119,15 @@ module dd8_core(
     wire [15:0] mod_ptr = rd_ptr + {8'd0, mod_ofs};
 
     // --- REVERSE Wind (ENVELOPE) A KATTOGÁS ELLEN ---
+    wire [15:0] rem_samps = delay_samps - 16'd1 - rev_count;
     reg signed [15:0] env_gain;
     always @(*) begin
-        if (rev_count < 16'd32)
-            env_gain = rev_count << 3; // Felfutás: 0 -> 256
-        else if (rev_count > (delay_samps - 16'd32))
-            env_gain = (delay_samps - 16'd1 - rev_count) << 3; // Lefutás: 256 -> 0
+        if (rev_count < 16'd256)
+            //env_gain = rev_count << 3; // Felfutás: 0 -> 256
+            env_gain = {7'd0, rev_count[8:0]};
+        else if (rev_count > (delay_samps - 16'd256))
+            //env_gain = (delay_samps - 16'd1 - rev_count) << 3; // Lefutás: 256 -> 0
+            env_gain = {7'd0, rem_samps[8:0]};
         else
             env_gain = 16'd256; // Teljes hangerõ
     end
