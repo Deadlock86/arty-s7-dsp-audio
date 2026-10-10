@@ -42,7 +42,7 @@ module dd8_core(
     localparam integer BUF_LEN = 65536;
 
     // BRAM attribútum + Memória tömb
-    (* ram_style = "block" *) reg signed [23:0] delay_mem [0:BUF_LEN-1];
+    (* syn_ramstyle = "block_ram" *) reg signed [23:0] delay_mem [0:BUF_LEN-1];
     reg [15:0] wr_ptr = 16'd0;
 
     // -------------------------------------------------------------------------
@@ -58,7 +58,7 @@ module dd8_core(
             3'd4: delay_samps = 16'd35280;  // ~800 ms 
             3'd5: delay_samps = 16'd44100;  // ~1000 ms
             3'd6: delay_samps = 16'd52920;  // ~1200 ms 
-            default: delay_samps = 16'd64400; // ~1460 ms 
+            default: delay_samps = 16'd64000; // ~1460 ms 
                
   /*      
             3'd0: delay_samps = 16'd1103;
@@ -118,6 +118,18 @@ module dd8_core(
     wire [7:0] mod_ofs = lfo_tri[16:9];
     wire [15:0] mod_ptr = rd_ptr + {8'd0, mod_ofs};
 
+    // --- REVERSE Wind (ENVELOPE) A KATTOGÁS ELLEN ---
+    reg signed [15:0] env_gain;
+    always @(*) begin
+        if (rev_count < 16'd32)
+            env_gain = rev_count << 3; // Felfutás: 0 -> 256
+        else if (rev_count > (delay_samps - 16'd32))
+            env_gain = (delay_samps - 16'd1 - rev_count) << 3; // Lefutás: 256 -> 0
+        else
+            env_gain = 16'd256; // Teljes hangerõ
+    end
+
+
     // -------------------------------------------------------------------------
     // 3. EGYETLEN AKTÍV CÍM KIVÁLASZTÁSA (Cím MUX)
     // -------------------------------------------------------------------------
@@ -134,12 +146,14 @@ module dd8_core(
     // 4. BRAM ÍRÁS ÉS TISZTA SZINKRON OLVASÁS (Dual-Port BRAM minta)
     // -------------------------------------------------------------------------
     reg signed [23:0] delayed_now;
-
+    
     always @(posedge clk) begin
         if (new_sample) begin
             // BRAM read/write
             delay_mem[wr_ptr] <= write_samp;
             delayed_now <= delay_mem[active_rd_ptr];
+
+
 
             // Mutatók és számlálók léptetése
             wr_ptr <= wr_ptr + 16'd1;
@@ -159,6 +173,9 @@ module dd8_core(
     reg signed [23:0] write_rep;
     reg signed [23:0] wet_rep;
     reg signed [23:0] shimmer_rep;
+
+    //wire signed [39:0] rev_win_mult = delayed_now * env_gain;
+    //wire signed [23:0] reverse_scaled = rev_win_mult[31:8];
 
     always @(*) begin
         shimmer_rep = delayed_now[23] ? (~delayed_now + 24'sd1) : delayed_now;
@@ -181,8 +198,8 @@ module dd8_core(
                 wet_rep   = write_rep;
             end
             3'd4: begin // Reverse
-                write_rep = delayed_now;
-                wet_rep   = delayed_now;
+                write_rep = (delayed_now >>> 1);
+                wet_rep   =  delayed_now;
             end
             3'd5: begin // +RV (Egyszerûsített csengés)
                 write_rep = delayed_now;
@@ -219,7 +236,13 @@ module dd8_core(
             write_samp = write_sum[23:0];
     end
 
-    wire signed [28:0] wet_ext = {{5{wet_rep[23]}}, wet_rep};
+
+    wire signed [39:0] rev_win_mult = wet_rep * env_gain;
+    wire signed [23:0] wet_rep_final = (mode_sel == 3'd4) ? rev_win_mult[31:8] : wet_rep;
+
+    wire signed [28:0] wet_ext = {{5{wet_rep_final[23]}}, wet_rep_final};
+
+    //wire signed [28:0] wet_ext = {{5{wet_rep[23]}}, wet_rep};
     
     (* use_dsp = "yes" *) wire signed [32:0] wet_mult = wet_ext * $signed({1'b0, wet_w});
     wire signed [28:0] wet_term = wet_mult >>> 3;
