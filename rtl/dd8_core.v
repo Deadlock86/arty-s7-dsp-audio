@@ -23,7 +23,7 @@
 //
 // Notes:
 // - This is an approximation, not a full recreation of every DD-8 mode.
-// - Reverse mode uses block-wise reverse playback for a practical simulation.
+// 
 // - +RV uses a short ambience diffuser instead of a full reverb engine.
 // - Shimmer uses a simple octave-like absolute-value blend on repeats.
 
@@ -107,8 +107,8 @@ module dd8_core(
     wire [15:0] rd_ptr = wr_ptr - delay_samps;
 
     // Reverse mutató számítása
-    reg [15:0] rev_count = 16'd0;
-    reg [15:0] rev_base = 16'd0;
+    reg [31:0] rev_count = 32'd0;
+    reg [31:0] rev_base = 32'd0;
     
     wire [15:0] rev_ptr  = rev_base + (delay_samps - 16'd1 - rev_count);
 
@@ -119,15 +119,18 @@ module dd8_core(
     wire [15:0] mod_ptr = rd_ptr + {8'd0, mod_ofs};
 
     // --- REVERSE Wind (ENVELOPE) A KATTOGÁS ELLEN ---
-    wire [15:0] rem_samps = delay_samps - 16'd1 - rev_count;
+    wire [31:0] delay_samps_32 = {16'd0, delay_samps};
+    wire [31:0] rem_samps = (delay_samps_32 > rev_count) ? (delay_samps - 16'd1 - rev_count) : 32'd0;
+    
     reg signed [15:0] env_gain;
     always @(*) begin
-        if (rev_count < 16'd256)
+        if (rev_count < 32'd256)
             //env_gain = rev_count << 3; // Felfutás: 0 -> 256
             env_gain = {7'd0, rev_count[8:0]};
-        else if (rev_count > (delay_samps - 16'd256))
-            //env_gain = (delay_samps - 16'd1 - rev_count) << 3; // Lefutás: 256 -> 0
+        else if (rem_samps < 32'd256) begin
+                        // Lefutás: 255 -> 0 (a legutolsó 256 mintánál)
             env_gain = {7'd0, rem_samps[8:0]};
+        end
         else
             env_gain = 16'd256; // Teljes hangerõ
     end
@@ -160,7 +163,7 @@ module dd8_core(
 
             // Mutatók és számlálók léptetése
             wr_ptr <= wr_ptr + 16'd1;
-            lfo_phase <= lfo_phase + 18'd113;
+            lfo_phase <= lfo_phase + 18'd7;
 
             if (rev_count >= delay_samps - 16'd1) begin
                 rev_count <= 16'd0;
