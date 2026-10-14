@@ -179,11 +179,16 @@ module dd8_core(
     reg signed [23:0] write_rep;
     reg signed [23:0] wet_rep;
     reg signed [23:0] shimmer_rep;
-
+    reg signed [23:0] abs_delayed;
     //wire signed [39:0] rev_win_mult = delayed_now * env_gain;
     //wire signed [23:0] reverse_scaled = rev_win_mult[31:8];
 
     always @(*) begin
+        
+       // abs_delayed = (delayed_now < 24'sd0) ? 
+         //             ((delayed_now == -24'sd8388608) ? 24'sd8388607 : (~delayed_now + 24'sd1)) : delayed_now;
+        
+        //shimmer_rep = (abs_delayed >>> 1) + (abs_delayed >>> 2);
         shimmer_rep = delayed_now[23] ? (~delayed_now + 24'sd1) : delayed_now;
         
         case (mode_sel)
@@ -212,7 +217,8 @@ module dd8_core(
                 wet_rep   = delayed_now + (delayed_now >>> 2);
             end
             3'd6: begin // Shimmer
-                write_rep = delayed_now;
+                write_rep = (delayed_now >>> 1) + (shimmer_rep >>> 2);
+                //write_rep = delayed_now;
                 wet_rep   = (delayed_now >>> 1) + (shimmer_rep >>> 1);
             end
             default: begin // Mod
