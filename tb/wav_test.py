@@ -2,134 +2,54 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, Timer
 
-import wave
-import os
-import math
-
-tb_dir = os.path.dirname(os.path.abspath(__file__))
-
-
 @cocotb.test()
-async def dd8_basic_passthrough_test(dut):
-    """Test bypass mode (enable = 0) passes input straight to output"""
-    # 100 MHz órajel indítása (10 ns periodus)
+async def test_bypass_mode(dut):
+    """1. Teszt: Bypass mód ellenőrzése (enable = 0)"""
     clock = Clock(dut.clk, 10, units="ns")
     cocotb.start_soon(clock.start())
 
-    # Kezdeti értékek
     dut.new_sample.value = 0
-    dut.sample_in.value = 12345
-    dut.mode_sel.value = 0
-    dut.dtime.value = 0
-    dut.feedback.value = 0
-    dut.elevel.value = 4
-    dut.enable.value = 0  # Bypass aktív
+    dut.sample_in.value = 0x123456
+    dut.enable.value = 0  # Bypass
 
-    await Timer(50, units="ns")
+    await Timer(40, units="ns")
     await RisingEdge(dut.clk)
 
-    # Bypassed állapotban a kimenetnek egyeznie kell a bemenettel
-    assert dut.sample_out.value == 12345, \
-        f"Bypass failed: got {dut.sample_out.value}, expected 12345"
+    # Bypass módban a kimenetnek azonnal kötnie kell a bemenetet
+    assert dut.sample_out.value == 0x123456, \
+        f"Hiba: Bypass kimenet {dut.sample_out.value:#x}, várt: 0x123456"
+    cocotb.log.info("Sikeres Bypass teszt!")
 
 
 @cocotb.test()
-async def dd8_sample_processing_test(dut):
-    """Test single sample ingestion with new_sample pulse"""
-    clock = Clock(dut.clk, 20, units="ns")
+async def test_single_pulse_processing(dut):
+    """2. Teszt: Egyetlen minta beadása new_sample plusszal"""
+    clock = Clock(dut.clk, 10, units="ns")
     cocotb.start_soon(clock.start())
 
-    # Alapbeállítások
     dut.new_sample.value = 0
     dut.sample_in.value = 0
-    dut.mode_sel.value = 0  # Standard mód
-    dut.dtime.value = 1
-    dut.feedback.value = 1  # Nincs visszacsatolás a tiszta teszthez
+    dut.enable.value = 1       # Effekt aktív
+    dut.mode_sel.value = 0     # Alap mód
+    dut.dtime.value = 0       # Delay idő
+    dut.feedback.value = 0
     dut.elevel.value = 4
-    dut.enable.value = 1  # Effekt bekapcsolva
 
-    await Timer(100, units="ns")
+    await Timer(50, units="ns")
 
-    # Egyetlen minta beadása
+    # Minta beadása 1 órajel ciklusra
     await RisingEdge(dut.clk)
-    dut.sample_in.value = 500000
+    dut.sample_in.value = 0x00AABB
     dut.new_sample.value = 1
     
     await RisingEdge(dut.clk)
     dut.new_sample.value = 0
 
-    # Várakozás néhány ciklust, hogy lássuk a kimenet változását
-    for _ in range(5):
+
+
+    # Várunk néhány ciklust, hogy a pipeline feldolgozza
+    for i in range(200):
         await RisingEdge(dut.clk)
+        cocotb.log.info(f"Ciklus {i}: kimenet = {dut.sample_out.value}")
 
-    cocotb.log.info(f"Sikeres futás! Kimenet értéke: {dut.sample_out.value}")
-    
-    
-    
-    # 3. WAV fájl paraméterek és generálás
-    input_wav_name = os.path.join(tb_dir, "input_test.wav")
-    output_wav_name = os.path.join(tb_dir, "output_processed.wav")
-
-    cocotb.log.info("Szintetikus szinusz WAV generálása a bemenethez...")
-    sample_rate = 44100
-    duration_sec = 0.5      # Fél másodpercnyi teszthang bőven elég a szimulációhoz
-    freq = 1000.0            # A4 hang (440 Hz)
-    
-    # 24-bit audio írása a bemeneti fájlba
-    with wave.open(input_wav_name, 'w') as wf:
-        wf.setnchannels(1)      # Mono
-        wf.setsampwidth(3)      # 24-bit audio (3 bájt)
-        wf.setframerate(sample_rate)
-        
-        for i in range(int(sample_rate * duration_sec)):
-            t = i / sample_rate
-            # 24 bites előjeles egész skálázás (-7000000 ... 7000000)
-            sample_val = int(7000000 * math.sin(2 * math.pi * freq * t))
-            wf.writeframes(sample_val.to_bytes(3, byteorder='little', signed=True))
-
-   # 4. WAV olvasás és feldolgozás
-    with wave.open(input_wav_name, 'r') as wf_in:
-        n_channels = wf_in.getnchannels()
-        sample_width = wf_in.getsampwidth()
-        framerate = wf_in.getframerate()
-        n_frames = wf_in.getnframes()
-        
-        cocotb.log.info(f"Feldolgozás indítása: {n_frames} minta...")
-
-        with wave.open(output_wav_name, 'w') as wf_out:
-            wf_out.setnchannels(n_channels)
-            wf_out.setsampwidth(sample_width)
-            wf_out.setframerate(framerate)
-
-            for i in range(n_frames):
-                raw_data = wf_in.readframes(1)
-                if not raw_data:
-                    break
-                
-                input_sample = int.from_bytes(raw_data, byteorder='little', signed=True)
-
-                await RisingEdge(dut.clk)
-                dut.sample_in.value = input_sample & 0xFFFFFF
-                dut.new_sample.value = 1
-                
-                await RisingEdge(dut.clk)
-                dut.new_sample.value = 0
-
-                # Biztonságosabb kimenet olvasás
-                val_str = str(dut.sample_out.value)
-                if 'x' in val_str.lower() or 'z' in val_str.lower():
-                    output_sample = 0
-                else:
-                    try:
-                        output_sample = int(dut.sample_out.value)
-                    except ValueError:
-                        output_sample = 0
-                
-                
-
-                if output_sample & (1 << 23):
-                    output_sample -= (1 << 24)
-
-                wf_out.writeframes(output_sample.to_bytes(3, byteorder='little', signed=True))
-
-    cocotb.log.info(f"Feldolgozás kész! Eredmény mentve ide: {output_wav_name}")
+    cocotb.log.info("Pulzus teszt lefutott.")

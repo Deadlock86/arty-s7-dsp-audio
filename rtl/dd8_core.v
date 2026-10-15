@@ -41,9 +41,18 @@ module dd8_core(
 
     localparam integer BUF_LEN = 65536;
 
-    // BRAM attribútum + Memória tömb
+    // BRAM attribï¿½tum + Memï¿½ria tï¿½mb
     (* syn_ramstyle = "block_ram" *) reg signed [23:0] delay_mem [0:BUF_LEN-1];
     reg [15:0] wr_ptr = 16'd0;
+
+    // --- Memory init for simulation
+    initial begin : mem_init
+        integer i;
+        for (i = 0; i < BUF_LEN; i = i + 1) begin
+            delay_mem[i] = 24'sd0;
+        end
+    end
+
 
     // -------------------------------------------------------------------------
     // 1. Parameter Look-Up Tables
@@ -102,54 +111,54 @@ module dd8_core(
     end
 
     // -------------------------------------------------------------------------
-    // 2. Olvasási mutatók kiszámítása
+    // 2. Olvasï¿½si mutatï¿½k kiszï¿½mï¿½tï¿½sa
     // -------------------------------------------------------------------------
     wire [15:0] rd_ptr = wr_ptr - delay_samps;
 
-    // Reverse mutató számítása
+    // Reverse mutatï¿½ szï¿½mï¿½tï¿½sa
     reg [31:0] rev_count = 32'd0;
     reg [31:0] rev_base = 32'd0;
     
     wire [15:0] rev_ptr  = rev_base + (delay_samps - 16'd1 - rev_count);
 
-    // LFO / Moduláció mutató számítása
+    // LFO / Modulï¿½ciï¿½ mutatï¿½ szï¿½mï¿½tï¿½sa
     reg [17:0] lfo_phase = 18'd0;
     wire [16:0] lfo_tri = lfo_phase[17] ? ~lfo_phase[16:0] : lfo_phase[16:0];
     wire [7:0] mod_ofs = lfo_tri[16:9];
     wire [15:0] mod_ptr = rd_ptr + {8'd0, mod_ofs};
 
-    // --- REVERSE Wind (ENVELOPE) A KATTOGÁS ELLEN ---
+    // --- REVERSE Wind (ENVELOPE) A KATTOGï¿½S ELLEN ---
     wire [31:0] delay_samps_32 = {16'd0, delay_samps};
     wire [31:0] rem_samps = (delay_samps_32 > rev_count) ? (delay_samps - 16'd1 - rev_count) : 32'd0;
     
     reg signed [15:0] env_gain;
     always @(*) begin
         if (rev_count < 32'd256)
-            //env_gain = rev_count << 3; // Felfutás: 0 -> 256
+            //env_gain = rev_count << 3; // Felfutï¿½s: 0 -> 256
             env_gain = {7'd0, rev_count[8:0]};
         else if (rem_samps < 32'd256) begin
-                        // Lefutás: 255 -> 0 (a legutolsó 256 mintánál)
+                        // Lefutï¿½s: 255 -> 0 (a legutolsï¿½ 256 mintï¿½nï¿½l)
             env_gain = {7'd0, rem_samps[8:0]};
         end
         else
-            env_gain = 16'd256; // Teljes hangerõ
+            env_gain = 16'd256; // Teljes hangerï¿½
     end
 
 
     // -------------------------------------------------------------------------
-    // 3. EGYETLEN AKTÍV CÍM KIVÁLASZTÁSA (Cím MUX)
+    // 3. EGYETLEN AKTï¿½V Cï¿½M KIVï¿½LASZTï¿½SA (Cï¿½m MUX)
     // -------------------------------------------------------------------------
     reg [15:0] active_rd_ptr;
     always @(*) begin
         case (mode_sel)
-            3'd2, 3'd7: active_rd_ptr = mod_ptr; // Tape & Modulate mód
-            3'd4:       active_rd_ptr = rev_ptr; // Reverse mód
+            3'd2, 3'd7: active_rd_ptr = mod_ptr; // Tape & Modulate mï¿½d
+            3'd4:       active_rd_ptr = rev_ptr; // Reverse mï¿½d
             default:    active_rd_ptr = rd_ptr;  // Standard, Analog, Warm, +RV, Shimmer
         endcase
     end
 
     // -------------------------------------------------------------------------
-    // 4. BRAM ÍRÁS ÉS TISZTA SZINKRON OLVASÁS (Dual-Port BRAM minta)
+    // 4. BRAM ï¿½Rï¿½S ï¿½S TISZTA SZINKRON OLVASï¿½S (Dual-Port BRAM minta)
     // -------------------------------------------------------------------------
     reg signed [23:0] delayed_now;
     
@@ -161,7 +170,7 @@ module dd8_core(
 
 
 
-            // Mutatók és számlálók léptetése
+            // Mutatï¿½k ï¿½s szï¿½mlï¿½lï¿½k lï¿½ptetï¿½se
             wr_ptr <= wr_ptr + 16'd1;
             lfo_phase <= lfo_phase + 18'd7;
 
@@ -174,7 +183,7 @@ module dd8_core(
     end
 
     // -------------------------------------------------------------------------
-    // 5. Effektus feldolgozás a BRAM-ból kiolvasott adaton
+    // 5. Effektus feldolgozï¿½s a BRAM-bï¿½l kiolvasott adaton
     // -------------------------------------------------------------------------
     reg signed [23:0] write_rep;
     reg signed [23:0] wet_rep;
@@ -212,7 +221,7 @@ module dd8_core(
                 write_rep = (delayed_now >>> 1);
                 wet_rep   =  delayed_now;
             end
-            3'd5: begin // +RV (Egyszerûsített csengés)
+            3'd5: begin // +RV (Egyszerï¿½sï¿½tett csengï¿½s)
                 write_rep = delayed_now;
                 wet_rep   = delayed_now + (delayed_now >>> 2);
             end
@@ -229,7 +238,7 @@ module dd8_core(
     end
 
     // -------------------------------------------------------------------------
-    // 6. Visszacsatolás és Kimeneti Keverés (Fixpontos Telítõdés)
+    // 6. Visszacsatolï¿½s ï¿½s Kimeneti Keverï¿½s (Fixpontos Telï¿½tï¿½dï¿½s)
     // -------------------------------------------------------------------------
     wire signed [28:0] in_ext = {{5{sample_in[23]}}, sample_in};
     wire signed [28:0] rep_ext = {{5{write_rep[23]}}, write_rep};
