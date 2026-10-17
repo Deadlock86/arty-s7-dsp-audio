@@ -51,6 +51,15 @@ module dd8_core(
         for (i = 0; i < BUF_LEN; i = i + 1) begin
             delay_mem[i] = 24'sd0;
         end
+
+        $dumpfile("waveform.vcd");
+        $dumpvars(0, dd8_core);
+        
+        #5000000; 
+        $dumpoff;
+        $display("VCD log off");
+
+
     end
 
 

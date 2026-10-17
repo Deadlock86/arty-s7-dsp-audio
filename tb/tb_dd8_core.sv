@@ -1,6 +1,74 @@
 
 `timescale 1ns / 1ps
+`timescale 1ns / 1ps
 
+module tb_dd8_core;
+
+    logic clk = 0;
+    logic new_sample = 0;
+    logic signed [23:0] sample_in = 0;
+    logic [2:0] mode_sel = 3'd4; // Reverse mode
+    logic [2:0] dtime = 3'd2;
+    logic [2:0] feedback = 3'd3;
+    logic [2:0] elevel = 3'd4;
+    logic enable = 1'b1;
+    wire signed [23:0] sample_out;
+
+    // 100 MHz-es rendszerórajel
+    always #5 clk = ~clk;
+
+    // Modul példányosítása
+    dd8_core u_dd8 (
+        .clk(clk),
+        .new_sample(new_sample),
+        .sample_in(sample_in),
+        .mode_sel(mode_sel),
+        .dtime(dtime),
+        .feedback(feedback),
+        .elevel(elevel),
+        .enable(enable),
+        .sample_out(sample_out)
+    );
+
+    // Audio memóriák a szimulációhoz
+    logic signed [23:0] audio_mem [0:44099]; // 1 mp @ 44.1 kHz
+    integer out_file;
+    integer i;
+
+    initial begin
+        // 1. HEX fájl betöltése a memóriába
+        $readmemh("audio_in.hex", audio_mem);
+        
+        // 2. Kimeneti fájl megnyitása az eredmény mentéséhez
+        out_file = $fopen("audio_out.hex", "w");
+
+        #100;
+
+        // 3. Audio minták adagolása 44.1 kHz-es ütemben
+        for (i = 0; i < 44100; i = i + 1) begin
+            sample_in = audio_mem[i];
+            
+            // new_sample tüske adása (1 órajelciklusig magas)
+            @(posedge clk);
+            new_sample = 1'b1;
+            @(posedge clk);
+            new_sample = 1'b0;
+
+            // Várakozás a következő audio mintáig (44.1 kHz = ~22.67 us = 22670 ns)
+            #22650;
+
+            // Kimeneti minta kiírása fájlba
+            $fdisplay(out_file, "%06X", sample_out & 24'hFFFFFF);
+        end
+
+        $fclose(out_file);
+        $display("Szimuláció kész! Kimenet kiírva az audio_out.hex fájlba.");
+        $finish;
+    end
+
+endmodule
+
+/*
 module tb_dd8_core;
 
     // ---------------------------------------------------------
@@ -220,3 +288,4 @@ module tb_dd8_core;
     end
 
 endmodule
+*/
