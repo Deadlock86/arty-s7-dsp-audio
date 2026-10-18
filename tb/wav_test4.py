@@ -16,20 +16,25 @@ async def dd8_custom_wav_file_test(dut):
     clock = Clock(dut.clk, 10, units="ns")
     cocotb.start_soon(clock.start())
 
-    input_filename = os.path.join(tb_dir, "clean guitar sample mono.wav")
+    input_filename = os.path.join(tb_dir, "single_note.wav")
+    #input_filename = os.path.join(tb_dir, "clean guitar sample mono.wav")
     output_filename = os.path.join(tb_dir, "output_custom_processed.wav")
 
     if not os.path.exists(input_filename):
         cocotb.log.error(f"A bemeneti WAV fájl nem található itt: {input_filename}")
         return
 
+    #Test configuration parameters
+    TAIL_DURATION_SEC = 2.0
+    INPUT_GAIN_SCALE = 0.5
+    
     # Hardver alapbeállítások a dd8_core portjaihoz igazítva
     dut.new_sample.value = 0
     dut.sample_in.value = 0
-    dut.mode_sel.value = 2     # 2 = Tape mód (vagy 0 = Standard)
-    dut.dtime.value = 4        # Delay idő (0-6)
-    dut.feedback.value = 4     # Visszacsatolás
-    dut.elevel.value = 5       # Wet/Effect szint
+    dut.mode_sel.value = 0     # 2 = Tape mód (vagy 0 = Standard)
+    dut.dtime.value = 2        # Delay idő (0-6)
+    dut.feedback.value = 2     # Visszacsatolás
+    dut.elevel.value = 3       # Wet/Effect szint
     dut.enable.value = 1       # Effekt bekapcsolva
 
     await Timer(100, units="ns")
@@ -41,10 +46,8 @@ async def dd8_custom_wav_file_test(dut):
         sample_width = wf_in.getsampwidth()
         framerate = wf_in.getframerate()
         n_frames = wf_in.getnframes()
-        
-        # Hozzáadunk egy kis lecsengési időt (tail) a fájl végéhez, hogy a delay is kifusson
-        tail_duration_sec = 1.0
-        total_frames = n_frames + int(framerate * tail_duration_sec)
+                
+        total_frames = n_frames + int(framerate * TAIL_DURATION_SEC)
 
         cocotb.log.info(f"WAVinfó -> Minták: {n_frames}, Teljes feldolgozandó (beletartozva a lecsengést is): {total_frames}")
 
@@ -61,13 +64,23 @@ async def dd8_custom_wav_file_test(dut):
                     else:
                         if sample_width == 3:
                             input_sample = int.from_bytes(raw_data, byteorder='little', signed=True)
-                            signal_in = input_sample & 0xFFFFFF
+                            signal_in = (input_sample & 0xFFFFFF) 
                         elif sample_width == 2:
                             input_sample = int.from_bytes(raw_data, byteorder='little', signed=True)
                             signal_in = (input_sample << 8) & 0xFFFFFF
                         else:
                             input_sample = int.from_bytes(raw_data, byteorder='little', signed=True)
                             signal_in = input_sample
+
+                        # --- Attenuation ---
+                        if signal_in & (1 << 23):
+                            signed_val = signal_in - (1 << 24)
+                        else:
+                            signed_val = signal_in
+                            
+                        scaled_val = int(signed_val * INPUT_GAIN_SCALE)
+                        signal_in = scaled_val & 0xFFFFFF
+
                 else:
                     # A fájl vége után tiszta csendet adunk be a delay lecsengéséhez
                     signal_in = 0
