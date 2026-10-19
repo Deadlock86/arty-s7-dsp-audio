@@ -9,6 +9,7 @@
 *.sim/
 *.ioplanning/
 *.gen/
+bin/
 
 # Project file (create_project.tcl is used)
 *.xpr
