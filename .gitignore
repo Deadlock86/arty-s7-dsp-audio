@@ -26,7 +26,7 @@
 
 # ==========================================
 # Xilinx IP Core 
-# Ignorál everything in IP folders, BUT az .xci/.xcix 
+# Ignore everything in IP folders, BUT .xci/.xcix 
 # ==========================================
 /ip/*/*
 !/ip/*/*.xci
@@ -40,3 +40,15 @@ Thumbs.db
 .vscode/
 .idea/
 bin/arty-s7-dsp-audio.mcs
+
+# ==========================================
+# test temporary
+# ==========================================
+/tb/*.wav
+!/tb/single_note.wav
+/tb/archive/
+/tb/__pycache__/
+*.vcd
+results.xml
+sim_build/
+

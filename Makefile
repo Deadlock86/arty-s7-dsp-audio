@@ -9,7 +9,7 @@ VERILOG_SOURCES += $(PWD)/rtl/dd8_core.v
 COCOTB_TOPLEVEL = dd8_core
 
 # A tb/ mappában lévő Python tesztfájl neve (kiterjesztés nélkül, pl. wav_test.py -> wav_test)
-COCOTB_TEST_MODULES = wav_test4
+COCOTB_TEST_MODULES = tb_dd8_core
 
 # Hozzáadjuk a tb/ mappát a Python keresési útvonalához, hogy megtalálja a wav_test.py-t
 export PYTHONPATH := $(PWD)/tb:$(PYTHONPATH)
