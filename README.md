@@ -10,10 +10,10 @@ Known Issues
 
 # FPGA Multi-Mode Audio Delay Effect (BOSS DD-8 Inspired)
 
-![Vivado](https://img.shields.io/badge/Vivado-2017.4%2B-blue.svg)
+![Vivado](https://img.shields.io/badge/Vivado-2017.3%2B-blue.svg)
 ![Board](https://img.shields.io/badge/Board-Digilent%20Arty%20S7--100-orange.svg)
-![Language](https://img.shields.io/badge/Language-Verilog%20%2F%20SystemVerilog-brightgreen.svg)
-![Interface](https://img.shields.io/badge/Pmod-I2S2%20Audio-red.svg)
+![Language](https://img.shields.io/badge/Language-Verilog%20%2F%20Python-brightgreen.svg)
+![Interface](https://img.shields.io/badge/Pmod-I2S2%20Audio%20%2F%20SSD-red.svg)
 
 Hardware implementation of a multi-mode digital audio delay pedal effect, designed for Xilinx Spartan-7 FPGAs. Inspired by the BOSS DD-8.
 
@@ -83,25 +83,16 @@ arty-s7-dsp-audio/
 ```
 	
 ## Getting Started & Build Instructions
-
-Prerequisites
-Vivado Design Suite: 2017.3 or newer (Standard/Enterprise edition).
-Hardware: Digilent Arty S7-100 (XC7S100) or S7-50 FPGA development board.
-Peripheral: 
-	Digilent Pmod I2S2 connected to Port JA
-	Digilent Pmod SSD connected to Port JB and JC
+Prerequisites  
+- Vivado Design Suite: 2017.3 or newer (Standard/Enterprise edition).  
+- Hardware: Digilent Arty S7-100 (XC7S100) or S7-50 FPGA development board.  
+- Peripheral:  
+	- Digilent Pmod I2S2 connected to Port JA  
+	- Digilent Pmod SSD connected to Port JB and JC  
 	
-1-Click Project Reconstruction (Tcl Workflow)
-	Clone this repository:Bashgit clone [https://github.com/your-username/arty-s7-dsp-audio.git](https://github.com/your-username/arty-s7-dsp-audio.git)
-	cd arty-s7-dsp-audio
-	Open Xilinx Vivado.
-	In the Tcl Console at the bottom of the window, navigate to the repository directory and execute:Tclcd ./arty-s7-dsp-audio
-	source create_project.tcl
-	Vivado will automatically generate the clean .xpr project structure, link all external RTL sources, and configure the clock IP.Click Generate Bitstream in the Flow Navigator.
-
 ## Hardware Controls & UI Map
-SW0: Master Effect Bypass (0 = Bypass / Dry, 1 = Effect Enabled / Wet)
-BTN0: Select Active Parameter Page 
-BTN1: Decrement Value (-1)
+SW0: Master Effect Bypass (0 = Bypass / Dry, 1 = Effect Enabled / Wet)    
+BTN0: Select Active Parameter Page  
+BTN1: Decrement Value (-1)  
 BTN2: Increment Value (+1)
 
