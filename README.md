@@ -1,3 +1,13 @@
+Known Issues
+
+- Reverse: Audible clicks at long delay times (D4 and above).
+- +RV: Insufficient reverb effect. Replace the current gain-based approximation with a proper reverb algorithm
+- Shimmer: Distorted repeats caused by the simplistic absolute-value-based octave effect
+- Tape/Mod: Distorted repeats
+
+
+
+
 # FPGA Multi-Mode Audio Delay Effect (BOSS DD-8 Inspired)
 
 ![Vivado](https://img.shields.io/badge/Vivado-2017.4%2B-blue.svg)
